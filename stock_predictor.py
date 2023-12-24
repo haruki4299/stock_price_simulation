@@ -24,7 +24,7 @@ def get_portfolio():
         
     return stock_list, share_list
     
-def stock_simulation(stock_list, share_list):
+def stock_simulation(stock_list, share_list, days, nSimulations):
     today = datetime.today().strftime('%Y-%m-%d')
     ten_years_past = (datetime.today() - timedelta(days=365*10)).strftime('%Y-%m-%d')
 
@@ -65,13 +65,13 @@ def stock_simulation(stock_list, share_list):
             stock_value = todayPrice * stock_shares
             current_port_price += stock_value
 
-            simulatedPrice = np.zeros((100, 1 + 365))
+            simulatedPrice = np.zeros((nSimulations, 1 + days))
             simulatedPrice[:, 0] = todayPrice
 
             dt = 1
 
-            for j in range(100):
-                for k in range(365):
+            for j in range(nSimulations):
+                for k in range(days):
                     drift = expected_return * dt
                     shock = expected_volatility * np.sqrt(dt) * np.random.normal()
                     simulatedPrice[j, k+1] = simulatedPrice[j, k] * np.exp(drift + shock)
@@ -84,15 +84,16 @@ def stock_simulation(stock_list, share_list):
             simulated_value = last_value * stock_shares
             potential_price += simulated_value
             pct_change = (simulated_value / stock_value) * 100
+            
             print()
             print("Last Value of Average Simulated Price:", last_value)
-            print(stock_symbol, ": Todays Value = ", stock_value, " Simulated Value in 1 year = ", simulated_value, "Percent Change = ", pct_change, "%")
+            print(stock_symbol, ": Todays Value = ", round(stock_value,2), " Simulated Value in 1 year = ", round(simulated_value,2), "Percent Change = ", round(pct_change,2), "%")
             print()
 
             # Plotting the simulated price paths
             plt.figure(figsize=(12, 6))
-            plt.plot(np.arange(0, 365 + 1) * dt, simulatedPrice.T, color='blue', alpha=0.1)
-            plt.plot(np.arange(0, 365 + 1) * dt, average_simulated_price, color='red', label='Average Simulation')
+            plt.plot(np.arange(0, days + 1) * dt, simulatedPrice.T, color='blue', alpha=0.1)
+            plt.plot(np.arange(0, days + 1) * dt, average_simulated_price, color='red', label='Average Simulation')
             plt.title(f'{stock_symbol} Closing Price Over Time')
             plt.xlabel('Time Steps')
             plt.ylabel('Simulated Stock Price')
@@ -108,12 +109,25 @@ def stock_simulation(stock_list, share_list):
 def main():
     stock_list, share_list = get_portfolio()
     
-    current_port_price, potential_price = stock_simulation(stock_list, share_list)
+    try:
+        days = 365 * int(input("How many years into the future from today do you want to simulate to?: "))
+    except ValueError:
+        print("Invalid Input for years. Default value 1 year (365 days)")
+        days = 365
+    
+    try:
+        nSimulations = int(input("How many simulations per stock should we conduct?: "))
+    except ValueError:
+        print("Invalid Input for number of simulations. Default value is 100 simulations.")
+        nSimulations = 100
+    
+    
+    current_port_price, potential_price = stock_simulation(stock_list, share_list, days, nSimulations)
 
     print()
-    print("Your Current Portfolio Value = ", current_port_price)
-    print("Potential Portfolio Value in 1 Year = ", potential_price)
-    print("Percent Change: ", (potential_price / current_port_price) * 100, "%")
+    print("Your Current Portfolio Value = ", round(current_port_price,2))
+    print("Potential Portfolio Value in 1 Year = ", round(potential_price,2))
+    print("Percent Change: ", round((potential_price / current_port_price) * 100, 2), "%")
 
 if __name__ == "__main__":
     main()
